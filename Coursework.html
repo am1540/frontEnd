@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>After-School Lesson</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .lesson-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .lesson-card {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 16px;
+            width: 250px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .lesson-image {
+            width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .cart-item {
+            border-bottom: 1px solid #ddd;
+            padding: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 400px;
+        }
+        .checkout-form {
+            margin-top: 20px;
+        }
+        .checkout-form p {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <div id="app">
+        <header>
+            <h1 v-text="sitename"></h1>
+            <button @click="toggleCheckout" :disabled="numberOfItems === 0">
+                <i class="fa fa-shopping-cart" aria-hidden="true"></i> 
+                Checkout ({{ numberOfItems }})
+            </button>
+        </header>
+
+        <main>
+            <div v-if="!displayCart" class="lesson-container">
+                <div v-for="lesson in lessons" :key="lesson.id" class="lesson-card">
+                    <h2>{{ lesson.subject }}</h2>
+                    <img :src="lesson.image" :alt="lesson.alt" class="lesson-image">
+                    <p><strong>Teacher:</strong> {{ lesson.teacher }}</p>
+                    <p><strong>Location:</strong> {{ lesson.location }}</p>
+                    <p><strong>Price:</strong> £{{ lesson.price }}</p>
+                    <p><strong>Spaces:</strong> {{ lesson.availability }}</p>
+
+                    <button @click="addToCart(lesson)" :disabled="!canAddToCart(lesson)">
+                        Add to Cart
+                    </button>
+                </div>
+            </div>
+
+            <div v-else>
+                <h2>Checkout Page</h2>
+
+                <h3>Your Cart Items</h3>
+                <div v-if="cart.length === 0">
+                    <p>Your cart is empty.</p>
+                </div>
+                <div v-else>
+                    <div v-for="lesson in lessons" :key="lesson.id">
+                        <div v-if="cartCount(lesson.id) > 0" class="cart-item">
+                            <span>{{ lesson.subject }} (Quantity: {{ cartCount(lesson.id) }})</span>
+                            <button @click="removeFromCart(lesson)">Remove</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="checkout-form">
+                    <h3>Customer Information</h3>
+                    <p>
+                        <strong>Name:</strong> 
+                        <input v-model="order.name" type="text">
+                    </p>
+                    <p>
+                        <strong>Phone Number:</strong> 
+                        <input v-model="order.phone" type="text">
+                    </p>
+
+                    <h4>Order Summary</h4>
+                    <p><strong>Name:</strong> {{ order.name }}</p>
+                    <p><strong>Phone:</strong> {{ order.phone }}</p>
+
+                    <button @click="submitForm" :disabled="!canCheckout">
+                        Place Order
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        const { createApp } = Vue;
+
+        const myApp = createApp({
+            data() {
+                return {
+                    sitename: "After School Club",
+                    displayCart: false,
+                    cart: [],
+                    order: {
+                        name: "",
+                        phone: ""
+                    },
+                    lessons: [
+                        {
+                            id: 1001,
+                            subject: "Computer Science",
+                            teacher: "Mark Jones",
+                            location: "Hendon",
+                            price: 25,
+                            availability: 5,
+                            image: "computerScience.jpg",
+                            alt: "A picture representing Computer Science"
+                        },
+                        {
+                            id: 1002,
+                            subject: "Mathematics",
+                            teacher: "Sarah Smith",
+                            location: "Hendon",
+                            price: 20,
+                            availability: 5,
+                            image: "maths.jpg",
+                            alt: "A picture representing Mathematics"
+                        },
+                        {
+                            id: 1003,
+                            subject: "English Literature",
+                            teacher: "John Doe",
+                            location: "Hendon",
+                            price: 18,
+                            availability: 5,
+                            image: "englishLiterature.jpg",
+                            alt: "A picture representing English Literature"
+                        }
+                    ]
+                }
+            },
+            methods: {
+                addToCart(lesson) {
+                    if (this.canAddToCart(lesson)) {
+                        this.cart.push(lesson.id);
+                        lesson.availability -= 1;
+                    }
+                },
+                removeFromCart(lesson) {
+                    const index = this.cart.indexOf(lesson.id);
+                    if (index > -1) {
+                        this.cart.splice(index, 1);
+                        lesson.availability += 1;
+                    }
+                    if (this.cart.length === 0) {
+                        this.displayCart = false;
+                    }
+                },
+                toggleCheckout() {
+                    this.displayCart = !this.displayCart;
+                },
+                canAddToCart(lesson) {
+                    return lesson.availability > 0;
+                },
+                cartCount(id) {
+                    let count = 0;
+                    for (let i = 0; i < this.cart.length; i++) {
+                        if (this.cart[i] === id) {
+                            count++;
+                        }
+                    }
+                    return count;
+                },
+                submitForm() {
+                    alert("Order submitted successfully!");
+                    this.cart = [];
+                    this.order.name = "";
+                    this.order.phone = "";
+                    this.displayCart = false;
+                }
+            },
+            computed: {
+                numberOfItems() {
+                    return this.cart.length;
+                },
+                canCheckout() {
+                    return this.order.name.trim() !== "" && this.order.phone.trim() !== "";
+                }
+            }
+        });
+
+        myApp.mount('#app');
+    </script>
+
+</body>
+</html>
